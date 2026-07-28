@@ -597,7 +597,7 @@
       var rows = filtered.map(function(r) {
         return '<tr>' +
           '<td class="seq-num">' + r.id + '</td>' +
-          '<td class="tag-id" onclick="closeModal();openModal(\\'+' + "'" + r.no.replace(/'/g, "\\'") + '\\')" + ';">' + r.no + '</td>' +
+          '<td class="tag-id" onclick="closeModal();openModal(\'' + r.no.replace(/'/g, "\\'") + '\');\x3c/script>">' + r.no + '</td>' +
           '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.desc+'">' + r.desc + '</td>' +
           '<td>' + r.submit + '</td>' +
           '<td>' + (r.complete || '—') + '</td>' +
