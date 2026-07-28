@@ -267,37 +267,37 @@
 <div class="stats">
   <div class="stat-card blue">
     <span class="label">问题总数</span>
-    <span class="value" onclick="openStatModal('all')">7</span>
+    <span class="value" data-filter="all" onclick="openStatModal('all')">7</span>
     <span class="sub">全部问题</span>
   </div>
   <div class="stat-card yellow">
     <span class="label">处理中</span>
-    <span class="value" onclick="openStatModal('processing')">5</span>
+    <span class="value" data-filter="processing" onclick="openStatModal('processing')">5</span>
     <span class="sub">1 解决中 · 1 已解决 · 0 超时</span>
   </div>
   <div class="stat-card blue">
     <span class="label">解决中</span>
-    <span class="value" style="color: var(--blue);" onclick="openStatModal('resolving')">1</span>
+    <span class="value" data-filter="resolving" style="color: var(--blue);" onclick="openStatModal('resolving')">1</span>
     <span class="sub">等待每刻反馈</span>
   </div>
   <div class="stat-card red">
     <span class="label">紧急问题</span>
-    <span class="value" onclick="openStatModal('urgent')">7</span>
+    <span class="value" data-filter="urgent" onclick="openStatModal('urgent')">7</span>
     <span class="sub">占比 100%</span>
   </div>
   <div class="stat-card green">
     <span class="label">24h 内处理率</span>
-    <span class="value" style="color: var(--red);" onclick="openStatModal('under24h')">0%</span>
+    <span class="value" data-filter="under24h" style="color: var(--red);" onclick="openStatModal('under24h')">0%</span>
     <span class="sub">1已解决 · 超时1个</span>
   </div>
   <div class="stat-card purple">
     <span class="label">平均处理时长</span>
-    <span class="value" style="color: var(--yellow);" onclick="openStatModal('resolved')">42h</span>
+    <span class="value" data-filter="resolved" style="color: var(--yellow);" onclick="openStatModal('resolved')">42h</span>
     <span class="sub">基于1个已解决案例</span>
   </div>
   <div class="stat-card blue">
     <span class="label">问题类型</span>
-    <span class="value" onclick="openStatModal('bug')">1</span>
+    <span class="value" data-filter="bug" onclick="openStatModal('bug')">1</span>
     <span class="sub">bug</span>
   </div>
 </div>
@@ -532,6 +532,20 @@
 
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeModal();
+  });
+
+  // 事件委托：在 .stats 区域内的 .value 点击统一处理
+  document.querySelector('.stats').addEventListener('click', function(e) {
+    var valueEl = e.target.closest('.value');
+    if (!valueEl) return;
+    var onclick = valueEl.getAttribute('onclick');
+    if (onclick && onclick.startsWith('openStatModal')) {
+      var match = onclick.match(/openStatModal\('([^']+)'\)/);
+      if (match) { openStatModal(match[1]); return; }
+    }
+    // 备用：直接从 data-filter 属性读取
+    var filter = valueEl.getAttribute('data-filter');
+    if (filter) { openStatModal(filter); }
   });
 
   // 统计数据来源（与表格同步）
