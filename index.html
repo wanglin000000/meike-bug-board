@@ -291,6 +291,15 @@
 </head>
 <body>
 
+<!-- Service Worker 注册 — 强制每次从网络拉最新 -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js?t=' + Date.now()).catch(function(e) {
+      console.warn('SW 注册失败（仅影响缓存策略）:', e);
+    });
+  }
+</script>
+
 <div class="header">
   <div>
     <h1>每刻报销系统 — 问题处理效率看板</h1>
