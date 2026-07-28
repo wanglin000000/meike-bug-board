@@ -200,9 +200,10 @@
     inset: 0;
     background: rgba(0,0,0,0.7);
     z-index: 1000;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 20px;
+    padding: 40px 20px 20px;
+    overflow-y: auto;
   }
   .modal-overlay.active { display: flex; }
   .modal {
@@ -210,18 +211,23 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     width: 100%;
-    max-width: 560px;
-    max-height: 80vh;
-    overflow-y: auto;
+    max-width: 900px;
+    min-width: 280px;
+    margin: 0 auto;
   }
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 14px 18px;
     border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--card);
+    border-radius: 10px 10px 0 0;
+    z-index: 1;
   }
-  .modal-header h2 { font-size: 15px; font-weight: 600; }
+  .modal-header h2 { font-size: 14px; font-weight: 600; }
   .modal-close {
     background: none;
     border: none;
@@ -232,11 +238,11 @@
     line-height: 1;
   }
   .modal-close:hover { color: var(--text); }
-  .modal-body { padding: 20px; }
-  .modal-section { margin-bottom: 18px; }
-  .modal-section:last-child { margin-bottom: 0; }
+  .modal-body { padding: 0; }
+  .modal-section { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .modal-section:last-child { border-bottom: none; }
   .modal-label {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -251,6 +257,32 @@
     font-size: 13px;
     padding: 20px 0;
   }
+
+  /* 统计弹窗内的明细表格 */
+  #statModalTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #statModalTable th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    white-space: nowrap;
+  }
+  #statModalTable td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #statModalTable tr:last-child td { border-bottom: none; }
+  #statModalTable tr:hover td { background: var(--card-hover); }
 </style>
 </head>
 <body>
@@ -598,7 +630,7 @@
         return '<tr>' +
           '<td class="seq-num">' + r.id + '</td>' +
           '<td class="tag-id" onclick="closeModal();openModal(\'' + r.no.replace(/'/g, "\\'") + '\');\x3c/script>">' + r.no + '</td>' +
-          '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.desc+'">' + r.desc + '</td>' +
+          '<td title="'+r.desc+'">' + r.desc + '</td>' +
           '<td>' + r.submit + '</td>' +
           '<td>' + (r.complete || '—') + '</td>' +
           '<td>' + r.handler + '</td>' +
@@ -607,9 +639,9 @@
         '</tr>';
       }).join('');
       document.getElementById('modalBody').innerHTML =
-        '<table style="width:100%;font-size:12px;">' +
+        '<table id="statModalTable">' +
         '<thead><tr>' +
-          '<th>ID</th><th>单号</th><th>问题描述</th><th>提出时间</th><th>完成时间</th><th>处理人</th><th>类型</th><th>状态</th>' +
+          '<th>#</th><th>单号</th><th>问题描述</th><th>提出时间</th><th>完成时间</th><th>处理人</th><th>类型</th><th>状态</th>' +
         '</tr></thead><tbody>' + rows + '</tbody></table>';
     }
 
