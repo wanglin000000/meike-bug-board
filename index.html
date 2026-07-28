@@ -70,7 +70,8 @@
     gap: 6px;
   }
   .stat-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card .value { font-size: 28px; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .stat-card .value:hover { opacity: 0.8; }
   .stat-card .sub { font-size: 11px; color: var(--text-muted); }
   .stat-card.blue .value { color: var(--blue); }
   .stat-card.green .value { color: var(--green); }
@@ -266,37 +267,37 @@
 <div class="stats">
   <div class="stat-card blue">
     <span class="label">问题总数</span>
-    <span class="value">7</span>
+    <span class="value" onclick="openStatModal('all')">7</span>
     <span class="sub">全部问题</span>
   </div>
   <div class="stat-card yellow">
     <span class="label">处理中</span>
-    <span class="value">5</span>
+    <span class="value" onclick="openStatModal('processing')">5</span>
     <span class="sub">1 解决中 · 1 已解决 · 0 超时</span>
   </div>
   <div class="stat-card blue">
     <span class="label">解决中</span>
-    <span class="value" style="color: var(--blue);">1</span>
+    <span class="value" style="color: var(--blue);" onclick="openStatModal('resolving')">1</span>
     <span class="sub">等待每刻反馈</span>
   </div>
   <div class="stat-card red">
     <span class="label">紧急问题</span>
-    <span class="value">7</span>
+    <span class="value" onclick="openStatModal('urgent')">7</span>
     <span class="sub">占比 100%</span>
   </div>
   <div class="stat-card green">
     <span class="label">24h 内处理率</span>
-    <span class="value" style="color: var(--red);">0%</span>
+    <span class="value" style="color: var(--red);" onclick="openStatModal('under24h')">0%</span>
     <span class="sub">1已解决 · 超时1个</span>
   </div>
   <div class="stat-card purple">
     <span class="label">平均处理时长</span>
-    <span class="value" style="color: var(--yellow);">42h</span>
+    <span class="value" style="color: var(--yellow);" onclick="openStatModal('resolved')">42h</span>
     <span class="sub">基于1个已解决案例</span>
   </div>
   <div class="stat-card blue">
     <span class="label">问题类型</span>
-    <span class="value">1</span>
+    <span class="value" onclick="openStatModal('bug')">1</span>
     <span class="sub">bug</span>
   </div>
 </div>
@@ -532,6 +533,74 @@
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeModal();
   });
+
+  // 统计数据来源（与表格同步）
+  const issueRows = [
+    { id: 1, no: 'PR260714000002', desc: '采购申请单号未按申请部门触发对应审批流，审批节点与实际业务不符', submit: '2026-07-15 11:36', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '处理中' },
+    { id: 2, no: 'PACR260715000003', desc: '采购付款申请单推送每刻失败，报错"关联单据失败"，实际单据在每刻正常', submit: '2026-07-15 15:26', complete: '2026-07-17 09:30', handler: '吴川', type: 'bug', urgent: '紧急', status: '已解决' },
+    { id: 3, no: 'PR260701000006-673489', desc: '审批驳回单据的审批意见无法在审批流程中回复', submit: '2026-07-08 16:00', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '处理中' },
+    { id: 4, no: 'PR260701000006-673489（补充）', desc: '单据召回或驳回后，业务强制不能在每刻系统编辑或提交单据', submit: '2026-07-08 16:00', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '处理中' },
+    { id: 5, no: 'MK26070288 / PACR260615000003', desc: '人力行政部王星雨单据自动变更到实习生肖能兴（账号未激活）', submit: '2026-07-16 14:00', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '处理中' },
+    { id: 6, no: 'MK26070325', desc: '每刻系统业务部门提交单据时报错，提示内部错误', submit: '2026-07-20', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '处理中' },
+    { id: 7, no: 'PR260713000002', desc: '采购申请单在每刻做了召回，但采购系统并没有收到召回状态', submit: '2026-07-24 11:37', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '解决中' }
+  ];
+
+  // 状态标签映射
+  const statusTagMap = {
+    '处理中': '<span class="tag tag-progress">处理中</span>',
+    '解决中': '<span class="tag tag-resolving">解决中</span>',
+    '已解决': '<span class="tag tag-resolved">已解决</span>'
+  };
+
+  // 统计指标名称映射
+  const filterTitleMap = {
+    'all':       '全部问题（7条）',
+    'processing':'处理中（5条）',
+    'resolving': '解决中（1条）',
+    'resolved':  '已解决（1条）',
+    'urgent':    '紧急问题（7条）',
+    'under24h':  '24h内处理（0条）',
+    'bug':       '问题类型：bug（7条）'
+  };
+
+  function openStatModal(filter) {
+    var filtered = issueRows.filter(function(r) {
+      if (filter === 'all')       return true;
+      if (filter === 'processing') return r.status === '处理中';
+      if (filter === 'resolving') return r.status === '解决中';
+      if (filter === 'resolved')  return r.status === '已解决';
+      if (filter === 'urgent')    return r.urgent === '紧急';
+      if (filter === 'under24h')  return r.complete !== null && (new Date(r.complete) - new Date(r.submit)) < 24 * 3600 * 1000;
+      if (filter === 'bug')       return r.type === 'bug';
+      return true;
+    });
+
+    document.getElementById('modalTitle').textContent = filterTitleMap[filter] || '数据明细';
+
+    if (filtered.length === 0) {
+      document.getElementById('modalBody').innerHTML = '<div class="no-data-hint">暂无符合条件的记录</div>';
+    } else {
+      var rows = filtered.map(function(r) {
+        return '<tr>' +
+          '<td class="seq-num">' + r.id + '</td>' +
+          '<td class="tag-id" onclick="closeModal();openModal(\\'+' + "'" + r.no.replace(/'/g, "\\'") + '\\')" + ';">' + r.no + '</td>' +
+          '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+r.desc+'">' + r.desc + '</td>' +
+          '<td>' + r.submit + '</td>' +
+          '<td>' + (r.complete || '—') + '</td>' +
+          '<td>' + r.handler + '</td>' +
+          '<td><span class="tag tag-bug">bug</span></td>' +
+          '<td>' + statusTagMap[r.status] + '</td>' +
+        '</tr>';
+      }).join('');
+      document.getElementById('modalBody').innerHTML =
+        '<table style="width:100%;font-size:12px;">' +
+        '<thead><tr>' +
+          '<th>ID</th><th>单号</th><th>问题描述</th><th>提出时间</th><th>完成时间</th><th>处理人</th><th>类型</th><th>状态</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+
+    document.getElementById('modalOverlay').classList.add('active');
+  }
 </script>
 
 <script>
