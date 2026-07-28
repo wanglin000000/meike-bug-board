@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每刻报销系统 — 问题处理效率看板</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --card-hover: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --blue: #58a6ff;
+    --blue-dim: #1f3a5f;
+    --green: #3fb950;
+    --green-dim: #1a3d2a;
+    --yellow: #d29922;
+    --yellow-dim: #3d2e00;
+    --red: #f85149;
+    --red-dim: #3d1414;
+    --purple: #bc8cff;
+    --purple-dim: #2d1f47;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .header .subtitle { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+  .header .badge {
+    background: var(--blue-dim);
+    color: var(--blue);
+    border: 1px solid var(--blue);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .stat-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card .sub { font-size: 11px; color: var(--text-muted); }
+  .stat-card.blue .value { color: var(--blue); }
+  .stat-card.green .value { color: var(--green); }
+  .stat-card.red .value { color: var(--red); }
+  .stat-card.yellow .value { color: var(--yellow); }
+  .stat-card.purple .value { color: var(--purple); }
+
+  .warning-bar {
+    background: var(--yellow-dim);
+    border: 1px solid var(--yellow);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--yellow);
+    margin-bottom: 20px;
+  }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .chart-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .chart-card h3 {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .chart-wrap { position: relative; height: 200px; }
+
+  .section-title {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .table-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead { background: #0d1117; }
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--card-hover); }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .tag-bug { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+  .tag-feature { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue); }
+  .tag-optimize { background: var(--purple-dim); color: var(--purple); border: 1px solid var(--purple); }
+  .tag-urgent { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+  .tag-normal { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+  .tag-progress { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow); }
+  .tag-resolving { background: #1a2d4a; color: #58a6ff; border: 1px solid #58a6ff; }
+  .tag-resolved { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+  .tag-id { color: var(--blue); font-family: 'Courier New', monospace; font-size: 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .tag-id:hover { color: #79c0ff; }
+  .seq-num { text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+
+  .matrix-section { margin-bottom: 24px; }
+  .matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .matrix-cell {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .matrix-cell .cell-title { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  .matrix-cell .cell-count { font-size: 22px; font-weight: 700; }
+  .matrix-cell .cell-sub { font-size: 11px; color: var(--text-muted); }
+
+  .footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* 详情弹窗 */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-header h2 { font-size: 15px; font-weight: 600; }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 20px; }
+  .modal-section { margin-bottom: 18px; }
+  .modal-section:last-child { margin-bottom: 0; }
+  .modal-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .modal-value { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .modal-value.empty { color: var(--text-muted); font-style: italic; }
+  .no-data-hint {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 20px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>每刻报销系统 — 问题处理效率看板</h1>
+    <div class="subtitle">数据更新日期：2026-07-28 &nbsp;|&nbsp; 数据来源：问题跟踪记录</div>
+  </div>
+  <div class="badge">实时监控中</div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="stats">
+  <div class="stat-card blue">
+    <span class="label">问题总数</span>
+    <span class="value">7</span>
+    <span class="sub">全部问题</span>
+  </div>
+  <div class="stat-card yellow">
+    <span class="label">处理中</span>
+    <span class="value">5</span>
+    <span class="sub">1 解决中 · 1 已解决 · 0 超时</span>
+  </div>
+  <div class="stat-card blue">
+    <span class="label">解决中</span>
+    <span class="value" style="color: var(--blue);">1</span>
+    <span class="sub">等待每刻反馈</span>
+  </div>
+  <div class="stat-card red">
+    <span class="label">紧急问题</span>
+    <span class="value">7</span>
+    <span class="sub">占比 100%</span>
+  </div>
+  <div class="stat-card green">
+    <span class="label">24h 内处理率</span>
+    <span class="value" style="color: var(--red);">0%</span>
+    <span class="sub">1已解决 · 超时1个</span>
+  </div>
+  <div class="stat-card purple">
+    <span class="label">平均处理时长</span>
+    <span class="value" style="color: var(--yellow);">42h</span>
+    <span class="sub">基于1个已解决案例</span>
+  </div>
+  <div class="stat-card blue">
+    <span class="label">问题类型</span>
+    <span class="value">1</span>
+    <span class="sub">bug</span>
+  </div>
+</div>
+
+<div class="warning-bar">
+  📌 问题2（PACR260715000003）已解决：因王星雨工号变更导致单据校验失败，已重新推送采购申请单和付款申请单，处理时长约42h。
+</div>
+
+<!-- 图表 -->
+<div class="charts-row">
+  <div class="chart-card">
+    <h3>按处理人分组</h3>
+    <div class="chart-wrap">
+      <canvas id="chartHandler"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <h3>按问题类型分组</h3>
+    <div class="chart-wrap">
+      <canvas id="chartType"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <h3>按紧急程度分组</h3>
+    <div class="chart-wrap">
+      <canvas id="chartUrgency"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <h3>按问题状态分组</h3>
+    <div class="chart-wrap">
+      <canvas id="chartStatus"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- 交叉矩阵 -->
+<div class="matrix-section">
+  <div class="section-title">按处理人 × 问题类型 交叉分析</div>
+  <div class="matrix-grid">
+    <div class="matrix-cell">
+      <div class="cell-title">吴川 · bug</div>
+      <div class="cell-count" style="color: var(--red);">7</div>
+      <div class="cell-sub">6处理中 · 1已解决</div>
+    </div>
+    <div class="matrix-cell">
+      <div class="cell-title">吴川 · 功能需求</div>
+      <div class="cell-count" style="color: var(--text-muted);">0</div>
+      <div class="cell-sub">—</div>
+    </div>
+    <div class="matrix-cell">
+      <div class="cell-title">吴川 · 优化建议</div>
+      <div class="cell-count" style="color: var(--text-muted);">0</div>
+      <div class="cell-sub">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- 完整问题列表 -->
+<div class="section-title">问题明细列表</div>
+<div class="table-card">
+  <table>
+    <thead>
+      <tr>
+        <th>问题ID</th>
+        <th>单号</th>
+        <th>问题描述</th>
+        <th>提出时间</th>
+        <th>处理完成时间</th>
+        <th>处理时长</th>
+        <th>处理人</th>
+        <th>问题类型</th>
+        <th>紧急程度</th>
+        <th>状态</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="seq-num">1</td>
+        <td class="tag-id" onclick="openModal('PR260714000002')">PR260714000002</td>
+        <td>采购申请单号未按申请部门触发对应审批流，审批节点与实际业务不符</td>
+        <td>2026-07-15 11:36</td>
+        <td style="color: var(--yellow);">—</td>
+        <td style="color: var(--yellow);">—</td>
+        <td>吴川</td>
+        <td><span class="tag tag-bug">bug</span></td>
+        <td><span class="tag tag-urgent">紧急</span></td>
+        <td><span class="tag tag-progress">处理中</span></td>
+      </tr>
+      <tr>
+        <td class="seq-num">2</td>
+        <td class="tag-id" onclick="openModal('PACR260715000003')">PACR260715000003</td>
+        <td>采购付款申请单推送每刻失败，报错"关联单据失败"，实际单据在每刻正常</td>
+        <td>2026-07-15 15:26</td>
+        <td>2026-07-17 09:30</td>
+        <td style="color: var(--yellow);">42h</td>
+        <td>吴川</td>
+        <td><span class="tag tag-bug">bug</span></td>
+        <td><span class="tag tag-urgent">紧急</span></td>
+        <td><span class="tag tag-resolved">已解决</span></td>
+      </tr>
+      <tr>
+        <td class="seq-num">3</td>
+        <td class="tag-id" onclick="openModal('PR260701000006-673489')">PR260701000006-673489</td>
+        <td>审批驳回单据的审批意见无法在审批流程中回复</td>
+        <td>2026-07-08 16:00</td>
+        <td style="color: var(--yellow);">—</td>
+        <td style="color: var(--yellow);">—</td>
+        <td>吴川</td>
+        <td><span class="tag tag-bug">bug</span></td>
+        <td><span class="tag tag-urgent">紧急</span></td>
+        <td><span class="tag tag-progress">处理中</span></td>
+      </tr>
+      <tr>
+        <td class="seq-num">4</td>
+        <td class="tag-id" onclick="openModal('PR260701000006-673489（补充）')">PR260701000006-673489（补充）</td>
+        <td>单据召回或驳回后，业务强制不能在每刻系统编辑或提交单据</td>
+        <td>2026-07-08 16:00</td>
+        <td style="color: var(--yellow);">—</td>
+        <td style="color: var(--yellow);">—</td>
+        <td>吴川</td>
+        <td><span class="tag tag-bug">bug</span></td>
+        <td><span class="tag tag-urgent">紧急</span></td>
+        <td><span class="tag tag-progress">处理中</span></td>
+      </tr>
+      <tr>
+        <td class="seq-num">5</td>
+        <td class="tag-id" onclick="openModal('MK26070288')">MK26070288 / PACR260615000003-10896132</td>
+        <td>人力行政部王星雨单据自动变更到实习生肖能兴（账号未激活）</td>
+        <td>2026-07-16 14:00</td>
+        <td style="color: var(--yellow);">—</td>
+        <td style="color: var(--yellow);">—</td>
+        <td>吴川</td>
+        <td><span class="tag tag-bug">bug</span></td>
+        <td><span class="tag tag-urgent">紧急</span></td>
+        <td><span class="tag tag-progress">处理中</span></td>
+      </tr>
+      <tr>
+        <td class="seq-num">6</td>
+        <td class="tag-id" onclick="openModal('MK26070325')">MK26070325</td>
+        <td>每刻系统业务部门提交单据时报错，提示内部错误</td>
+        <td>2026-07-20</td>
+        <td style="color: var(--yellow);">—</td>
+        <td style="color: var(--yellow);">—</td>
+        <td>吴川</td>
+        <td><span class="tag tag-bug">bug</span></td>
+        <td><span class="tag tag-urgent">紧急</span></td>
+        <td><span class="tag tag-progress">处理中</span></td>
+      </tr>
+      <tr>
+        <td class="seq-num">7</td>
+        <td class="tag-id" onclick="openModal('PR260713000002')">PR260713000002</td>
+        <td>采购申请单PR260713000002在每刻做了召回，但采购系统并没有收到召回状态</td>
+        <td>2026-07-24 11:37</td>
+        <td style="color: var(--blue);">—</td>
+        <td style="color: var(--blue);">—</td>
+        <td>吴川</td>
+        <td><span class="tag tag-bug">bug</span></td>
+        <td><span class="tag tag-urgent">紧急</span></td>
+        <td><span class="tag tag-resolving">解决中</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  每刻报销系统问题处理效率看板 &nbsp;·&nbsp; 由 WorkBuddy 自动生成 &nbsp;·&nbsp; 2026-07-28
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">—</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+  const problemData = {
+    'PR260714000002': {
+      title: 'PR260714000002',
+      cause: '',
+      solution: ''
+    },
+    'PACR260715000003': {
+      title: 'PACR260715000003',
+      cause: '王星雨的工号做了变更，采购申请单和结算单、付款申请单的工号不一致，导致校验失败',
+      solution: '将之前的采购申请单作废，然后重新推送采购申请单，之后再重新推送付款申请单即可'
+    },
+    'PR260701000006-673489': {
+      title: 'PR260701000006-673489',
+      cause: '',
+      solution: ''
+    },
+    'PR260701000006-673489（补充）': {
+      title: 'PR260701000006-673489（补充）',
+      cause: '',
+      solution: ''
+    },
+    'MK26070288': {
+      title: 'MK26070288 / PACR260615000003-10896132',
+      cause: '',
+      solution: ''
+    },
+    'MK26070325': {
+      title: 'MK26070325',
+      cause: '',
+      solution: ''
+    },
+    'PR260713000002': {
+      title: 'PR260713000002',
+      cause: '原逻辑一个单据号只会推一次撤销信息；墨迹提出需要沟通监控和重试机制，目前无反馈',
+      solution: ''
+    }
+  };
+
+  function openModal(id) {
+    var d = problemData[id] || { title: id, cause: '', solution: '' };
+    document.getElementById('modalTitle').textContent = '单号：' + d.title;
+    var html = '<div class="modal-section"><div class="modal-label">问题原因</div><div class="modal-value ' + (d.cause ? '' : 'empty') + '">' + (d.cause || '暂无记录') + '</div></div>';
+    html += '<div class="modal-section"><div class="modal-label">解决方案</div><div class="modal-value ' + (d.solution ? '' : 'empty') + '">' + (d.solution || '暂无记录') + '</div></div>';
+    document.getElementById('modalBody').innerHTML = html;
+    document.getElementById('modalOverlay').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+
+<script>
+  // 配色语义化：每个图表独立主色，避免视觉重复
+  const blue    = '#58a6ff';  // 处理人——专业蓝
+  const purple  = '#a371f7';  // 问题类型——紫罗兰（区别于紧急度的橙红）
+  const orange  = '#e3b341';  // 紧急程度——高对比警示橙
+  const yellow  = '#d29922';  // 处理中——沿用系统黄
+  const green   = '#3fb950';  // 已解决——系统绿
+  const muted   = '#8b949e';  // 图例文字
+  const dimBlue = '#1f3a5f';  // 单段图表底色（半透明环底）
+
+  const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: muted, font: { size: 12 } } }
+    }
+  };
+
+  // ── 按处理人：蓝色系 ──
+  new Chart(document.getElementById('chartHandler'), {
+    type: 'doughnut',
+    data: {
+      labels: ['吴川'],
+      datasets: [{
+        data: [7],
+        backgroundColor: [blue],
+        borderWidth: 0,
+        // 单段图表：加一条暗色底环增加层次感
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        // 强制显示图例（单段图表尤其需要）
+        legend: { display: true, labels: { color: muted, font: { size: 12 }, boxWidth: 12 } }
+      }
+    }
+  });
+
+  // ── 按问题类型：紫罗兰——与紧急度/状态完全区分 ──
+  new Chart(document.getElementById('chartType'), {
+    type: 'doughnut',
+    data: {
+      labels: ['bug'],
+      datasets: [{
+        data: [7],
+        backgroundColor: [purple],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { display: true, labels: { color: muted, font: { size: 12 }, boxWidth: 12 } }
+      }
+    }
+  });
+
+  // ── 按紧急程度：橙色——强警示感，与问题类型的紫罗兰形成对比 ──
+  new Chart(document.getElementById('chartUrgency'), {
+    type: 'doughnut',
+    data: {
+      labels: ['紧急'],
+      datasets: [{
+        data: [7],
+        backgroundColor: [orange],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { display: true, labels: { color: muted, font: { size: 12 }, boxWidth: 12 } }
+      }
+    }
+  });
+
+  // ── 按状态：黄（处理中）+ 绿（已解决）——语义清晰 ──
+  new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: ['处理中', '解决中', '已解决'],
+      datasets: [{
+        data: [5, 1, 1],
+        backgroundColor: [yellow, blue, green],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { display: true, labels: { color: muted, font: { size: 12 }, boxWidth: 12 } }
+      }
+    }
+  });
+</script>
+</body>
+</html>
