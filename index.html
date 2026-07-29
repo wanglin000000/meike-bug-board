@@ -317,12 +317,12 @@
   </div>
   <div class="stat-card yellow">
     <span class="label">处理中</span>
-    <span class="value" data-filter="processing" onclick="openStatModal('processing')">5</span>
-    <span class="sub">1 解决中 · 1 已解决 · 0 超时</span>
+    <span class="value" data-filter="processing" onclick="openStatModal('processing')">6</span>
+    <span class="sub">0 解决中 · 1 已解决</span>
   </div>
   <div class="stat-card blue">
     <span class="label">解决中</span>
-    <span class="value" data-filter="resolving" style="color: var(--blue);" onclick="openStatModal('resolving')">1</span>
+    <span class="value" data-filter="resolving" style="color: var(--blue);" onclick="openStatModal('resolving')">0</span>
     <span class="sub">等待每刻反馈</span>
   </div>
   <div class="stat-card green">
@@ -497,12 +497,12 @@
         <td class="tag-id" onclick="openModal('PR260713000002')">PR260713000002</td>
         <td>采购申请单PR260713000002在每刻做了召回，但采购系统并没有收到召回状态</td>
         <td>2026-07-24 11:37</td>
-        <td style="color: var(--blue);">—</td>
-        <td style="color: var(--blue);">—</td>
+        <td style="color: var(--yellow);">—</td>
+        <td style="color: var(--yellow);">—</td>
         <td>吴川</td>
         <td><span class="tag tag-bug">bug</span></td>
         <td><span class="tag tag-urgent">紧急</span></td>
-        <td><span class="tag tag-resolving">解决中</span></td>
+        <td><span class="tag tag-progress">处理中</span></td>
       </tr>
     </tbody>
   </table>
@@ -601,7 +601,7 @@
     { id: 4, no: 'PR260701000006-673489（补充）', desc: '单据召回或驳回后，业务强制不能在每刻系统编辑或提交单据', submit: '2026-07-08 16:00', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '处理中' },
     { id: 5, no: 'MK26070288 / PACR260615000003', desc: '人力行政部王星雨单据自动变更到实习生肖能兴（账号未激活）', submit: '2026-07-16 14:00', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '处理中' },
     { id: 6, no: 'MK26070325', desc: '每刻系统业务部门提交单据时报错，提示内部错误', submit: '2026-07-20', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '处理中' },
-    { id: 7, no: 'PR260713000002', desc: '采购申请单在每刻做了召回，但采购系统并没有收到召回状态', submit: '2026-07-24 11:37', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '解决中' }
+    { id: 7, no: 'PR260713000002', desc: '采购申请单在每刻做了召回，但采购系统并没有收到召回状态', submit: '2026-07-24 11:37', complete: null, handler: '吴川', type: 'bug', urgent: '紧急', status: '处理中' }
   ];
 
   // 状态标签映射
@@ -751,7 +751,7 @@
     data: {
       labels: ['处理中', '解决中', '已解决'],
       datasets: [{
-        data: [5, 1, 1],
+        data: [6, 0, 1],
         backgroundColor: [yellow, blue, green],
         borderWidth: 0,
         hoverOffset: 4
